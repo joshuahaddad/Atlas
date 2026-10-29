@@ -1,31 +1,22 @@
 dreamkit
 Copyright (c) 2026 Joshua Haddad
 
-The dream skill (skills/dream/SKILL.md) adapts the workflow of dream-skill by
-timoncool, https://github.com/timoncool/dream-skill: the read, reflect and
-propose phases, the notes log, the evidence policy for stale entries, the rule
-against history in memory text, and the memory frontmatter types. dreamkit
-rewrites it to read transcripts and to end as a pull request instead of an HTML
-checklist. No code was copied. dream-skill is under this licence:
+dreamkit's design draws on public sources:
 
-    MIT License
-    
-    Copyright (c) 2026 timoncool
-    
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-    
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-    
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
+- Claude Code's memory documentation (https://code.claude.com/docs/en/memory):
+  an index file loaded into every session with topic files read on demand,
+  the user, feedback, project and reference memory types, and memory as
+  plain markdown that people can read and edit.
+- Anthropic's Managed Agents "Dreams" documentation
+  (https://platform.claude.com/docs/en/managed-agents/dreams): an offline job
+  that reads past sessions and an existing memory store, merges duplicates,
+  replaces stale entries, and writes its result for review instead of editing
+  the store in place.
+- The AIDevCon 2026 London talk on context engineering and dreaming
+  (https://tessl.io/registry/ainativedev/aidevcon-2026-ldn/0.100.14/files/talk-lamis-context-engineering-dreaming/transcript.md):
+  memory as files searched with ordinary tools, versioning with provenance,
+  layered permissions, and a human accepting or rejecting each proposed change.
+
+An early draft was compared against timoncool/dream-skill
+(https://github.com/timoncool/dream-skill). dreamkit includes no code or text
+from it.
