@@ -39,7 +39,8 @@ project, and topic pages read on demand. See [CONVENTIONS.md](CONVENTIONS.md) an
 - `dreamkit.toml.example`: per-tier config: repo, sources, deny patterns, an optional prepare
   command, model hint, PR command.
 
-The scripts use only the Python standard library (3.11 or later) and run with `uv run`.
+The scripts use only the Python standard library (3.11 or later) and run with `uv run`, or
+`python3` where uv isn't installed.
 
 ## Install
 

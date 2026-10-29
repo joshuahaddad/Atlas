@@ -9,6 +9,7 @@ You propose one change to an org-memory tier repo. You never write its `base` br
 merges or rejects the PR.
 
 `$DREAM` below is the `dream` skill's folder, which holds the scripts and config reader.
+Run them with `uv run`, or `python3` (3.11+) where uv isn't installed.
 
 1. **Pick the tier.** Ask the user which tier, unless they said. Read it from the config
    (`$DREAMKIT_CONFIG`, else `~/.config/dreamkit/dreamkit.toml`). If the content could be

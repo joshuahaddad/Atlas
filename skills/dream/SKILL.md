@@ -9,7 +9,8 @@ You read what agents did this week and propose what the org memory should learn,
 You never change the tier repo's `base` branch. A human reviews your PR; that review is the only
 gate, so every change must carry evidence they can check.
 
-`$SKILL` below is this skill's folder. Run its scripts with `uv run`.
+`$SKILL` below is this skill's folder. Run its scripts with `uv run`, or `python3`
+(3.11+) where uv isn't installed.
 
 ## 0. Set up
 
