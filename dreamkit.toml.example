@@ -12,6 +12,9 @@ deny = [
   "/srv/finance",
   "(?i)\\bpayroll\\b",
 ]
+# Optional shell command run once before any source is read; if it fails, nothing is written.
+# Such as copying sessions another user owns into a folder this user can read (no pipe: sh has no pipefail):
+# prepare = "rm -rf ~/.cache/dreamkit/agent-src && mkdir -p ~/.cache/dreamkit/agent-src && sudo -n -u agent tar -C /home/agent/.claude/projects -c . > ~/.cache/dreamkit/agent-src.tar && tar -x -C ~/.cache/dreamkit/agent-src -f ~/.cache/dreamkit/agent-src.tar"
 # Runs in `repo` with the dream branch checked out. Gets DREAM_TIER, DREAM_BRANCH, DREAM_BASE,
 # DREAM_TITLE and DREAM_BODY_FILE. Push to a fork or a review ref, never to `base`.
 # GitHub, from a fork:
@@ -31,7 +34,7 @@ glob = "~/.claude/projects/*/*.jsonl"
 kind = "files"
 glob = "~/.claude/projects/*/memory/*.md"
 
-# OpenCode: sessions in a SQLite database (checked on OpenCode 1.18).
+# OpenCode: sessions in a SQLite database (checked on OpenCode 1.18 and 2.0).
 [[tiers.org.sources]]
 kind = "opencode-sqlite"
 path = "~/.local/share/opencode/opencode.db"

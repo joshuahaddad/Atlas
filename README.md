@@ -36,7 +36,8 @@ project, and topic pages read on demand. See [CONVENTIONS.md](CONVENTIONS.md) an
     valid frontmatter.
   - `scripts/open_pr.py` runs the tier's PR command.
 - `skills/remember/`: proposes one topic to a tier as a small PR, from inside a session.
-- `dreamkit.toml.example`: per-tier config: repo, sources, deny patterns, model hint, PR command.
+- `dreamkit.toml.example`: per-tier config: repo, sources, deny patterns, an optional prepare
+  command, model hint, PR command.
 
 The scripts use only the Python standard library (3.11 or later) and run with `uv run`.
 
@@ -84,7 +85,7 @@ and a model that group trusts, over that group's sessions only.
 |---|---|---|
 | `claude-jsonl` | Claude Code sessions: one JSONL file per session under `~/.claude/projects/<project>/` | Claude Code, 2026-10 |
 | `files` | Plain memory files, such as Claude Code auto memory in `~/.claude/projects/*/memory/` | |
-| `opencode-sqlite` | OpenCode sessions: tables `session`, `message` and `part` in `~/.local/share/opencode/opencode.db` | OpenCode 1.18 |
+| `opencode-sqlite` | OpenCode sessions: tables `session`, `message` and `part` in `~/.local/share/opencode/opencode.db` | OpenCode 1.18 and 2.0 |
 
 Older OpenCode versions kept sessions as JSON files under `~/.local/share/opencode/storage/`;
 that layout is not supported.
@@ -99,7 +100,8 @@ that layout is not supported.
   Check each change's evidence.
 - **The filter is the only thing that keeps data out of a tier.** It drops whole sessions on a
   plain regex match. Deny patterns are blunt: test them with a dry run of the filter, and prefer
-  a stricter pattern to a leak.
+  a stricter pattern to a leak. They match the messages, not the instruction files a tool
+  records.
 - **Transcripts hold secrets** that passed through a session. The skill tells the model not to
   copy any; a secret scanner on the tier repo catches what slips through. PR bodies are not
   scanned.
