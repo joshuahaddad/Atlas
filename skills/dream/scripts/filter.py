@@ -5,6 +5,7 @@
 
 Runs before the model. A session or file that matches any of the tier's deny
 patterns anywhere in its raw text is dropped whole, so the model never sees it.
+A tier's optional `prepare` command runs first, such as to copy another user's sessions.
 
     uv run filter.py --tier org --out ~/.cache/dreamkit/org-2026-01-31
 """
@@ -15,6 +16,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import sys
 import time
 import tomllib
@@ -66,9 +68,9 @@ def claude_sessions(src, since):
     for path in sorted(glob.glob(os.path.expanduser(src["glob"]))):
         if os.path.getmtime(path) < since:
             continue
-        raw = Path(path).read_text(errors="replace")
-        lines, meta = [], {}
-        for line in raw.splitlines():
+        # raw is the full messages only: attachment records hold the instruction files, which the model never sees here.
+        raws, lines, meta = [], [], {}
+        for line in Path(path).read_text(errors="replace").splitlines():
             try:
                 d = json.loads(line)
             except json.JSONDecodeError:
@@ -78,14 +80,15 @@ def claude_sessions(src, since):
             meta["end"] = d.get("timestamp") or meta.get("end")
             msg = d.get("message")
             if d.get("type") in ("user", "assistant") and isinstance(msg, dict):
+                raws.append(json.dumps(msg, ensure_ascii=False))
                 text = claude_text(msg.get("content"))
                 if text.strip():
                     lines.append(f"## {d['type']}\n{text}")
-        yield "claude-" + Path(path).stem, raw, meta, "\n\n".join(lines)
+        yield "claude-" + Path(path).stem, "\n".join(raws), meta, "\n\n".join(lines)
 
 
 def opencode_sessions(src, since):
-    """OpenCode (checked on 1.18): sessions in a SQLite DB, tables session, message, part."""
+    """OpenCode (checked on 1.18 and 2.0): sessions in a SQLite DB, tables session, message, part."""
     path = os.path.expanduser(src["path"])
     if not os.path.exists(path):
         return
@@ -125,6 +128,10 @@ def run(tier, out):
     out = Path(out)
     if out.exists() and any(out.iterdir()):
         sys.exit(f"{out} is not empty: another dream may be running, or remove it")
+    if tier.get("prepare"):
+        r = subprocess.run(tier["prepare"], shell=True)
+        if r.returncode:
+            sys.exit(f"prepare exited {r.returncode}; nothing written")
     (out / "sessions").mkdir(parents=True, exist_ok=True)
     (out / "memory").mkdir(exist_ok=True)
     deny = [re.compile(p) for p in tier.get("deny", [])] + [re.compile(re.escape(DREAM_MARKER))]

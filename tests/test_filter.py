@@ -76,3 +76,35 @@ def test_filter(tmp_path):
         assert "not empty" in str(e)
     else:
         raise AssertionError("second run should refuse")
+
+
+def test_messages_only(tmp_path):
+    # The deny pattern sits in an instruction file the tool recorded, not in what the model saw.
+    jsonl(tmp_path / "s-att.jsonl", "s-att", "prefer small PRs")
+    with open(tmp_path / "s-att.jsonl", "a") as fh:
+        fh.write("\n" + json.dumps({"type": "attachment", "content": "never read /srv/payroll"}))
+    # The match is in a tool result past the clip, so only the full message has it.
+    recs = [{"type": "user", "message": {"role": "user", "content": "hi"}},
+            {"type": "user", "message": {"role": "user", "content": [
+                {"type": "tool_result", "content": "x" * 5000 + " /srv/payroll"}]}}]
+    (tmp_path / "s-cut.jsonl").write_text("\n".join(json.dumps(r) for r in recs))
+    tier = {"deny": ["/srv/payroll"], "sources": [{"kind": "claude-jsonl", "glob": str(tmp_path / "*.jsonl")}]}
+    m = f.run(tier, tmp_path / "out")
+    assert [s["id"] for s in m["kept"]] == ["claude-s-att"]
+    assert m["dropped_by_pattern"] == {"/srv/payroll": 1}
+
+
+def test_prepare(tmp_path):
+    src = tmp_path / "src"
+    tier = {"prepare": "exit 3", "sources": [{"kind": "files", "glob": str(src / "*.md")}]}
+    try:
+        f.run(tier, tmp_path / "out")
+    except SystemExit as e:
+        assert "prepare exited 3" in str(e)
+    else:
+        raise AssertionError("a failing prepare should stop the filter")
+    assert not (tmp_path / "out").exists()
+
+    tier["prepare"] = f"mkdir {src} && echo tabs > {src}/style.md"
+    f.run(tier, tmp_path / "out")
+    assert [p.read_text() for p in (tmp_path / "out/memory").iterdir()] == ["tabs\n"]
