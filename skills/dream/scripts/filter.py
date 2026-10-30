@@ -88,33 +88,77 @@ def claude_sessions(src, since):
 
 
 def opencode_sessions(src, since):
-    """OpenCode (checked on 1.18 and 2.0): sessions in a SQLite DB, tables session, message, part."""
+    """OpenCode: sessions in a SQLite DB. 1.x keeps them in session, message and part; 2.0 in
+    session_v2 and session_message, and keeps the 1.x tables for sessions made before it."""
     path = os.path.expanduser(src["path"])
     if not os.path.exists(path):
         return
     db = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    sessions = db.execute(
-        "select id, directory, time_created, time_updated from session where time_updated >= ? order by time_created",
-        (since * 1000,),
-    ).fetchall()
-    for sid, directory, created, updated in sessions:
-        rows = db.execute(
-            "select m.data, p.data from part p join message m on p.message_id = m.id"
-            " where p.session_id = ? order by p.time_created",
-            (sid,),
+    tables = {n for (n,) in db.execute("select name from sqlite_master where type = 'table'")}
+    for table, render in (("session", opencode_v1), ("session_v2", opencode_v2)):
+        if table not in tables:
+            continue
+        sessions = db.execute(
+            f"select id, directory, time_created, time_updated from {table} where time_updated >= ? order by time_created",
+            (since * 1000,),
         ).fetchall()
-        raw = "\n".join(m + "\n" + p for m, p in rows)
-        lines = []
-        for m, p in rows:
-            role, part = json.loads(m).get("role"), json.loads(p)
-            if part.get("type") == "text":
-                lines.append(f"## {role}\n{part['text']}")
-            elif part.get("type") == "tool":
-                st = part.get("state", {})
-                lines.append(f"## {role}\n[tool {part.get('tool')}] {clip(st.get('input'))}\n[result] {clip(st.get('output', ''))}")
-        meta = {"cwd": directory, "start": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created / 1000)),
-                "end": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(updated / 1000))}
-        yield "opencode-" + sid, raw, meta, "\n\n".join(lines)
+        for sid, directory, created, updated in sessions:
+            raw, lines = render(db, sid)
+            meta = {"cwd": directory, "start": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(created / 1000)),
+                    "end": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(updated / 1000))}
+            yield "opencode-" + sid, raw, meta, "\n\n".join(lines)
+
+
+def opencode_v1(db, sid):
+    rows = db.execute(
+        "select m.data, p.data from part p join message m on p.message_id = m.id"
+        " where p.session_id = ? order by p.time_created",
+        (sid,),
+    ).fetchall()
+    raw = "\n".join(m + "\n" + p for m, p in rows)
+    lines = []
+    for m, p in rows:
+        role, part = json.loads(m).get("role"), json.loads(p)
+        if part.get("type") == "text":
+            lines.append(f"## {role}\n{part['text']}")
+        elif part.get("type") == "tool":
+            st = part.get("state", {})
+            lines.append(f"## {role}\n[tool {part.get('tool')}] {clip(st.get('input'))}\n[result] {clip(st.get('output', ''))}")
+    return raw, lines
+
+
+# The 2.0 message types the model reads; `system` holds the loaded instruction files, as Claude
+# Code's attachment records do, so it is neither rendered nor matched
+OPENCODE_V2_TYPES = ("user", "assistant", "synthetic", "compaction")
+
+
+def opencode_v2(db, sid):
+    rows = db.execute(
+        f"select type, data from session_message where session_id = ? and type in ({','.join('?' * len(OPENCODE_V2_TYPES))})"
+        " order by seq",
+        (sid, *OPENCODE_V2_TYPES),
+    ).fetchall()
+    raw = "\n".join(data for _, data in rows)
+    lines = []
+    for kind, data in rows:
+        d = json.loads(data)
+        if kind == "user" and d.get("text"):
+            lines.append(f"## user\n{d['text']}")
+        elif kind == "synthetic" and d.get("text"):
+            lines.append(f"## user\n[{d.get('description') or 'synthetic'}] {clip(d['text'])}")
+        elif kind == "compaction" and d.get("summary"):
+            lines.append(f"## summary\n{d['summary']}")
+        elif kind == "assistant":
+            for b in d.get("content") or []:
+                if b.get("type") == "text":
+                    lines.append(f"## assistant\n{b['text']}")
+                elif b.get("type") == "tool":
+                    st = b.get("state") or {}
+                    out = st.get("content") or st.get("error") or ""
+                    if isinstance(out, list):
+                        out = "\n".join(x.get("text", "") for x in out if isinstance(x, dict))
+                    lines.append(f"## assistant\n[tool {b.get('name')}] {clip(st.get('input'))}\n[result] {clip(out)}")
+    return raw, lines
 
 
 def memory_files(src):
