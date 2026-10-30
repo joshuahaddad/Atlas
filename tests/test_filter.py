@@ -108,3 +108,40 @@ def test_prepare(tmp_path):
     tier["prepare"] = f"mkdir {src} && echo tabs > {src}/style.md"
     f.run(tier, tmp_path / "out")
     assert [p.read_text() for p in (tmp_path / "out/memory").iterdir()] == ["tabs\n"]
+
+
+def opencode_v2_db(path):
+    db = sqlite3.connect(path)
+    db.executescript("""
+        create table session_v2 (id text, directory text, time_created int, time_updated int);
+        create table session_message (id text, session_id text, type text, seq int, time_created int, data text);""")
+    now = int(time.time() * 1000)
+    msgs = {
+        "ses_ok": [("system", {"text": "rules: never open /srv/payroll"}),
+                   ("user", {"text": "use uv for python"}),
+                   ("assistant", {"content": [
+                       {"type": "reasoning", "text": "hidden"},
+                       {"type": "text", "text": "will do"},
+                       {"type": "tool", "name": "bash", "state": {"input": {"command": "ls"},
+                                                                  "content": [{"type": "text", "text": "a b"}]}}]})],
+        "ses_bad": [("user", {"text": "hi"}),
+                    ("assistant", {"content": [{"type": "tool", "name": "read", "state": {
+                        "input": {}, "content": [{"type": "text", "text": "x" * 5000 + " /srv/payroll/q1.csv"}]}}]})],
+    }
+    for sid, rows in msgs.items():
+        db.execute("insert into session_v2 values (?,?,?,?)", (sid, "/work/tidepool", now, now))
+        for i, (kind, data) in enumerate(rows):
+            db.execute("insert into session_message values (?,?,?,?,?,?)",
+                       (f"{sid}{i}", sid, kind, i, now, json.dumps({"time": {"created": now}, **data})))
+    db.commit()
+
+
+def test_opencode_v2(tmp_path):
+    opencode_v2_db(tmp_path / "opencode.db")
+    tier = {"deny": ["/srv/payroll"], "sources": [{"kind": "opencode-sqlite", "path": str(tmp_path / "opencode.db")}]}
+    m = f.run(tier, tmp_path / "out")
+    # The instruction file in `system` doesn't drop ses_ok; a match past the clip drops ses_bad.
+    assert [s["id"] for s in m["kept"]] == ["opencode-ses_ok"]
+    text = (tmp_path / "out/sessions/opencode-ses_ok.md").read_text()
+    assert "use uv for python" in text and "will do" in text and "[tool bash]" in text and "a b" in text
+    assert "hidden" not in text and "payroll" not in text

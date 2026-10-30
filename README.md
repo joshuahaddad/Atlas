@@ -86,7 +86,7 @@ and a model that group trusts, over that group's sessions only.
 |---|---|---|
 | `claude-jsonl` | Claude Code sessions: one JSONL file per session under `~/.claude/projects/<project>/` | Claude Code, 2026-10 |
 | `files` | Plain memory files, such as Claude Code auto memory in `~/.claude/projects/*/memory/` | |
-| `opencode-sqlite` | OpenCode sessions: tables `session`, `message` and `part` in `~/.local/share/opencode/opencode.db` | OpenCode 1.18 and 2.0 |
+| `opencode-sqlite` | OpenCode sessions in `~/.local/share/opencode/opencode.db`: tables `session`, `message` and `part` (1.x), and `session_v2` and `session_message` (2.0, which keeps the 1.x tables for older sessions) | OpenCode 1.18 and 2.0.30 |
 
 Older OpenCode versions kept sessions as JSON files under `~/.local/share/opencode/storage/`;
 that layout is not supported.
