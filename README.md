@@ -1,8 +1,8 @@
 # Atlas
 
 Atlas is one repo for the agent tooling I write myself: skills, hooks, and larger kits that
-used to live in separate repos. Folders under `atlas/` nest freely, and the installer finds
-each tool by the file that defines it.
+used to live in separate repos. Each tool is a Claude Code plugin under `atlas/`,
+and standard tools install it: Claude Code's `/plugin` and `npx skills`.
 
 
 ## Why one repo
@@ -28,7 +28,7 @@ atlas/
         SKILL.md            a skill
     hooks/hooks.json        hooks, if any
     .mcp.json               MCP servers, if any
-install.sh                  installs for harnesses other than Claude Code
+check.sh                    checks the catalog against the plugins
 ```
 
 A plugin with one skill can keep its `SKILL.md` at the plugin root instead of under `skills/`.
@@ -40,23 +40,33 @@ Hook and server commands name the plugin's own files with `${CLAUDE_PLUGIN_ROOT}
 hooks and MCP servers included:
 
 ```bash
-claude plugin marketplace add ~/Atlas      # or joshuahaddad/Atlas
+claude plugin marketplace add joshuahaddad/Atlas      # or a local clone, such as ~/Atlas
 ```
 
 Then pick plugins in `/plugin`, or run `claude plugin install dreamkit@atlas`. Plugin skills
 are named after their plugin, as in `/dreamkit:dream`. A catalog added from a local folder
 reads the files in place, so edits load at the next session.
 
-**OpenCode, Codex, Cursor and other harnesses** run `install.sh`. It shows the folders under
-`atlas/` as a tree, with each skill and MCP config it found among the files git tracks. Pick a
-tool, or a folder to take every tool under it. It links each skill into `~/.agents/skills`,
-which all of them read, and adds MCP servers to OpenCode's `opencode.json`. Hooks are Claude
-Code only: OpenCode takes hooks as JavaScript plugins. Rerunning it is safe.
+**OpenCode, Codex, Cursor and other harnesses** install the skills with
+[`skills`](https://github.com/vercel-labs/skills), which reads the same catalog:
+
+```bash
+npx skills add joshuahaddad/Atlas -g                  # pick skills and harnesses
+npx skills update -g                                  # pull new versions later
+```
+
+It copies each skill into `~/.agents/skills`, which those harnesses read, and records it in
+`~/.agents/.skill-lock.json`. Edits in a local clone reach them only through `update`.
+
+Hooks and MCP servers reach Claude Code only, through its plugins. For an MCP server in
+another harness, [`add-mcp`](https://www.mintlify.com/neondatabase/add-mcp) installs one
+by command or URL.
 
 ## Add a tool
 
 1. Create a branch.
 2. Add the folder with its `.claude-plugin/plugin.json`, and an entry in
-   `.claude-plugin/marketplace.json`. `install.sh` refuses to run while the two disagree.
-3. Run `claude plugin validate .`
+   `.claude-plugin/marketplace.json`.
+3. Run `./check.sh`. It fails when the catalog and the plugins disagree, then runs
+   `claude plugin validate .`
 4. Open a pull request.

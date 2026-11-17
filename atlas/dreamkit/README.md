@@ -52,7 +52,7 @@ The scripts use only the Python standard library (3.11 or later) and run with `u
    - OpenCode: add the path to `instructions` in `~/.config/opencode/opencode.json`, or link it
      as `~/.config/opencode/AGENTS.md` if you have no global AGENTS.md.
 4. Install the skills. In Claude Code: `/plugin install dreamkit --marketplace joshuahaddad/Atlas`.
-   For OpenCode and other harnesses, run `install.sh` at the root of Atlas and pick `dreamkit/`.
+   For OpenCode, Codex and others: `npx skills add joshuahaddad/Atlas -g`.
 5. For each user who runs dream: copy `dreamkit.toml.example` to
    `~/.config/dreamkit/dreamkit.toml` and fill in each tier. Give `repo` its own clone (not
    the checkout agents read), and give that clone a remote the PR command can push to: a fork,
