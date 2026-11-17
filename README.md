@@ -36,31 +36,10 @@ Hook and server commands name the plugin's own files with `${CLAUDE_PLUGIN_ROOT}
 
 ## Install
 
-**Claude Code** reads the catalog directly and installs plugins through its `/plugin` menu,
-hooks and MCP servers included:
-
-```bash
-claude plugin marketplace add joshuahaddad/Atlas      # or a local clone, such as ~/Atlas
-```
-
-Then pick plugins in `/plugin`, or run `claude plugin install dreamkit@atlas`. Plugin skills
-are named after their plugin, as in `/dreamkit:dream`. A catalog added from a local folder
-reads the files in place, so edits load at the next session.
-
-**OpenCode, Codex, Cursor and other harnesses** install the skills with
-[`skills`](https://github.com/vercel-labs/skills), which reads the same catalog:
-
 ```bash
 npx skills add joshuahaddad/Atlas -g                  # pick skills and harnesses
 npx skills update -g                                  # pull new versions later
 ```
-
-It copies each skill into `~/.agents/skills`, which those harnesses read, and records it in
-`~/.agents/.skill-lock.json`. Edits in a local clone reach them only through `update`.
-
-Hooks and MCP servers reach Claude Code only, through its plugins. For an MCP server in
-another harness, [`add-mcp`](https://www.mintlify.com/neondatabase/add-mcp) installs one
-by command or URL.
 
 ## Add a tool
 
