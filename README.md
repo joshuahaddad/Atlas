@@ -35,7 +35,8 @@ The installer lists the files that git tracks under `atlas/` and looks for three
 | `.mcp.json` | MCP servers | adds the servers to each harness's config |
 
 A tool's name is its folder name. The menu shows a skill's `description` from its frontmatter.
-Untracked files, such as caches and build output, are never installed.
+An untracked `SKILL.md`, `hooks.json` or `.mcp.json` is never found, so a tool installs only
+once it is committed.
 
 ## Install
 
