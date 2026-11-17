@@ -1,0 +1,12 @@
+{
+  "name": "atlas",
+  "description": "Joshua Haddad's agent tooling",
+  "owner": { "name": "Joshua Haddad" },
+  "plugins": [
+    {
+      "name": "dreamkit",
+      "source": "./atlas/dreamkit",
+      "description": "Org memory for coding agents: dream and remember"
+    }
+  ]
+}

@@ -11,40 +11,52 @@ As I began to build tooling, I wanted to centralize some of the learnings and pa
 
 ## Layout
 
-All tooling lives under `atlas/`. Everything outside it, such as this README and
-`install.sh`, is about the repo itself, and the installer never looks there.
+All tooling lives under `atlas/`, in folders that nest freely. Every tool is a Claude Code
+plugin: a folder with `.claude-plugin/plugin.json`, holding any of skills, hooks and MCP
+servers. The repo root is the plugin catalog, `.claude-plugin/marketplace.json`, which lists
+each plugin by its path.
 
 ```
+.claude-plugin/
+  marketplace.json          the catalog: one entry per plugin under atlas/
 atlas/
-  writing/                  a folder that only groups
-    figure-kit/             a kit: scripts, a Docker image, and its skill
-      figure-loop/
-        SKILL.md            makes this folder a skill
-      ...
-install.sh                  picks tools and installs them
+  dreamkit/                 a plugin
+    .claude-plugin/
+      plugin.json           makes this folder a plugin
+    skills/
+      dream/
+        SKILL.md            a skill
+    hooks/hooks.json        hooks, if any
+    .mcp.json               MCP servers, if any
+install.sh                  installs for harnesses other than Claude Code
 ```
 
-## Discovery
-
-The installer lists the files that git tracks under `atlas/` and looks for three names:
-
-| File | Tool | The installer |
-|---|---|---|
-| `SKILL.md` | a skill | links the folder into each harness's skills folder |
-| `hooks.json` | hooks | adds the hooks to each harness's settings |
-| `.mcp.json` | MCP servers | adds the servers to each harness's config |
-
-A tool's name is its folder name. The menu shows a skill's `description` from its frontmatter.
-An untracked `SKILL.md`, `hooks.json` or `.mcp.json` is never found, so a tool installs only
-once it is committed.
+A plugin with one skill can keep its `SKILL.md` at the plugin root instead of under `skills/`.
+Hook and server commands name the plugin's own files with `${CLAUDE_PLUGIN_ROOT}`.
 
 ## Install
 
-`install.sh` shows the folders under `atlas/` as a tree, with every tool it found. Pick a tool
-to install it, or pick a folder to install every tool under it. Then pick the harnesses.
+**Claude Code** reads the catalog directly and installs plugins through its `/plugin` menu,
+hooks and MCP servers included:
 
-## Change a tool
+```bash
+claude plugin marketplace add ~/Atlas      # or joshuahaddad/Atlas
+```
+
+Then pick plugins in `/plugin`, or run `claude plugin install dreamkit@atlas`. Plugin skills
+are named after their plugin, as in `/dreamkit:dream`. A catalog added from a local folder
+reads the files in place, so edits load at the next session.
+
+**OpenCode, Codex, Cursor and other harnesses** run `install.sh`. It shows the folders under
+`atlas/` as a tree, with each skill and MCP config it found among the files git tracks. Pick a
+tool, or a folder to take every tool under it. It links each skill into `~/.agents/skills`,
+which all of them read, and adds MCP servers to OpenCode's `opencode.json`. Hooks are Claude
+Code only: OpenCode takes hooks as JavaScript plugins. Rerunning it is safe.
+
+## Add a tool
 
 1. Create a branch.
-2. Change the folder.
-3. Open a pull request.
+2. Add the folder with its `.claude-plugin/plugin.json`, and an entry in
+   `.claude-plugin/marketplace.json`. `install.sh` refuses to run while the two disagree.
+3. Run `claude plugin validate .`
+4. Open a pull request.
