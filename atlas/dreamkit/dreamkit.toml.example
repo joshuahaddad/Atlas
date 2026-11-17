@@ -1,0 +1,51 @@
+# dreamkit config. Copy to ~/.config/dreamkit/dreamkit.toml, or point DREAMKIT_CONFIG at it.
+# One table per tier. Each user who runs a dream keeps their own copy.
+
+[tiers.org]
+# A clone of the tier repo that dream and remember commit branches in. Not the checkout agents read.
+repo = "~/dreamkit/memory-org"
+base = "main"                 # the branch PRs target
+model = "any model your org allows for org-wide data"   # a hint the skill shows; nothing enforces it
+max_age_days = 7              # transcripts older than this are skipped
+# Python regular expressions. A session or file that matches one anywhere is dropped before the model runs.
+deny = [
+  "/srv/finance",
+  "(?i)\\bpayroll\\b",
+]
+# Optional shell command run once before any source is read; if it fails, nothing is written.
+# Such as copying sessions another user owns into a folder this user can read (no pipe: sh has no pipefail):
+# prepare = "rm -rf ~/.cache/dreamkit/agent-src && mkdir -p ~/.cache/dreamkit/agent-src && sudo -n -u agent tar -C /home/agent/.claude/projects -c . > ~/.cache/dreamkit/agent-src.tar && tar -x -C ~/.cache/dreamkit/agent-src -f ~/.cache/dreamkit/agent-src.tar"
+# Runs in `repo` with the dream branch checked out. Gets DREAM_TIER, DREAM_BRANCH, DREAM_BASE,
+# DREAM_TITLE and DREAM_BODY_FILE. Push to a fork or a review ref, never to `base`.
+# GitHub, from a fork:
+pr_command = '''git push fork "HEAD:$DREAM_BRANCH" && gh pr create --repo example-org/memory-org --base "$DREAM_BASE" --head "example-bot:$DREAM_BRANCH" --title "$DREAM_TITLE" --body-file "$DREAM_BODY_FILE"'''
+# Forgejo or Gitea, from a fork, through the API (FORGE_TOKEN set in the environment):
+# pr_command = '''git push fork "HEAD:$DREAM_BRANCH" && jq -n --arg t "$DREAM_TITLE" --rawfile b "$DREAM_BODY_FILE" --arg h "example-bot:$DREAM_BRANCH" --arg base "$DREAM_BASE" '{title:$t, body:$b, head:$h, base:$base}' | curl -fsS -X POST -H "Authorization: token $FORGE_TOKEN" -H "Content-Type: application/json" --data @- https://git.example.com/api/v1/repos/example-org/memory-org/pulls'''
+# AGit (`git push origin HEAD:refs/for/$DREAM_BASE/$DREAM_BRANCH -o title=...`) needs no fork, but push
+# options can't hold newlines, so the body has to be set afterwards.
+
+# Claude Code: one JSONL file per session.
+[[tiers.org.sources]]
+kind = "claude-jsonl"
+glob = "~/.claude/projects/*/*.jsonl"
+
+# Claude Code auto memory (the agents' scratch).
+[[tiers.org.sources]]
+kind = "files"
+glob = "~/.claude/projects/*/memory/*.md"
+
+# OpenCode: sessions in a SQLite database (checked on OpenCode 1.18 and 2.0).
+[[tiers.org.sources]]
+kind = "opencode-sqlite"
+path = "~/.local/share/opencode/opencode.db"
+
+# A second tier, read only by a smaller group, run by a user who can read its sources.
+[tiers.private]
+repo = "~/dreamkit/memory-private"
+model = "a local model only"
+deny = []
+pr_command = '''git push fork "HEAD:$DREAM_BRANCH" && gh pr create --repo example-org/memory-private --base "$DREAM_BASE" --head "example-bot:$DREAM_BRANCH" --title "$DREAM_TITLE" --body-file "$DREAM_BODY_FILE"'''
+
+[[tiers.private.sources]]
+kind = "opencode-sqlite"
+path = "~/.local/share/opencode/opencode.db"

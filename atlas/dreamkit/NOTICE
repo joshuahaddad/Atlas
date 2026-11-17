@@ -1,0 +1,22 @@
+dreamkit
+Copyright (c) 2026 Joshua Haddad
+
+dreamkit's design draws on public sources:
+
+- Claude Code's memory documentation (https://code.claude.com/docs/en/memory):
+  an index file loaded into every session with topic files read on demand,
+  the user, feedback, project and reference memory types, and memory as
+  plain markdown that people can read and edit.
+- Anthropic's Managed Agents "Dreams" documentation
+  (https://platform.claude.com/docs/en/managed-agents/dreams): an offline job
+  that reads past sessions and an existing memory store, merges duplicates,
+  replaces stale entries, and writes its result for review instead of editing
+  the store in place.
+- The AIDevCon 2026 London talk on context engineering and dreaming
+  (https://tessl.io/registry/ainativedev/aidevcon-2026-ldn/0.100.14/files/talk-lamis-context-engineering-dreaming/transcript.md):
+  memory as files searched with ordinary tools, versioning with provenance,
+  layered permissions, and a human accepting or rejecting each proposed change.
+
+An early draft was compared against timoncool/dream-skill
+(https://github.com/timoncool/dream-skill). dreamkit includes no code or text
+from it.
