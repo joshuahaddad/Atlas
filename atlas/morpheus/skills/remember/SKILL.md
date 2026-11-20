@@ -11,16 +11,17 @@ merges or rejects the PR.
 `$DREAM` below is the `dream` skill's folder, which holds the scripts and config reader.
 Run them with `uv run`, or `python3` (3.11+) where uv isn't installed.
 
-1. **Pick the tier.** Ask the user which tier, unless they said. Read it from the config
-   (`$DREAMKIT_CONFIG`, else `~/.config/dreamkit/dreamkit.toml`). If the content could be
-   read by someone the tier is not meant for, say so and stop.
+1. **Pick the tier.** Ask the user which tier, unless they said. Read it with
+   `uv run "$DREAM/scripts/filter.py" --tier "$TIER" --show` and take `$REPO` and `$BASE`
+   from it; if there is no config or no such tier, follow the dream skill's **Set up a tier**.
+   If the content could be read by someone the tier is not meant for, say so and stop.
 2. **Branch** from a clean, current clone:
    ```bash
    git -C "$REPO" status --porcelain    # must print nothing
    git -C "$REPO" fetch origin
    git -C "$REPO" switch -c "remember/<short-slug>" "origin/$BASE"
    ```
-3. **Write one topic.** Read `INDEX.md` first. If a page already covers the topic, edit it.
+3. **Write one topic.** Never edit the repo's `morpheus.toml`. Read `INDEX.md` first. If a page already covers the topic, edit it.
    Otherwise add one page in the folder the kit's `CONVENTIONS.md` names
    (`$(realpath "$DREAM")/../../CONVENTIONS.md`), with frontmatter `name`,
    `description`, `type`, and add the one line that links it from `INDEX.md` or a project page.

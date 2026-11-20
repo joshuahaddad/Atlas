@@ -1,4 +1,5 @@
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -27,3 +28,12 @@ def test_problems(tmp_path):
     p = check(repo)
     assert "topics/orphan.md: frontmatter has no description" in p
     assert any("type 'guess'" in x for x in p)
+
+
+def test_max_lines_from_policy(tmp_path):
+    repo = tmp_path / "tier"
+    shutil.copytree(EXAMPLE, repo)
+    (repo / "morpheus.toml").write_text("index_max_lines = 3\n")
+    r = subprocess.run([sys.executable, str(Path(__file__).parents[1] / "skills/dream/scripts/check.py"), str(repo)],
+                       capture_output=True, text=True)
+    assert r.returncode == 1 and "the limit is 3" in r.stdout

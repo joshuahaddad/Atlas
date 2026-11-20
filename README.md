@@ -20,7 +20,7 @@ each plugin by its path.
 .claude-plugin/
   marketplace.json          the catalog: one entry per plugin under atlas/
 atlas/
-  dreamkit/                 a plugin
+  morpheus/                 a plugin
     .claude-plugin/
       plugin.json           makes this folder a plugin
     skills/

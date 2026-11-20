@@ -3,7 +3,7 @@
 # ///
 """Run a tier's pr_command from its repo clone, on the branch that is checked out.
 
-    uv run open_pr.py --tier org --title "Dream 2026-01-31" --body ~/.cache/dreamkit/org-2026-01-31/pr.md
+    uv run open_pr.py --tier org --title "Dream 2026-01-31" --body ~/.cache/morpheus/org-2026-01-31/pr.md
 
 pr_command gets DREAM_TIER, DREAM_BRANCH, DREAM_BASE, DREAM_TITLE and DREAM_BODY_FILE.
 """
@@ -18,7 +18,7 @@ from filter import DEFAULT_CONFIG, load_tier
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--config", default=os.environ.get("DREAMKIT_CONFIG", DEFAULT_CONFIG))
+    ap.add_argument("--config", default=DEFAULT_CONFIG)
     ap.add_argument("--tier", required=True)
     ap.add_argument("--title", required=True)
     ap.add_argument("--body", required=True, help="a markdown file with the PR description")

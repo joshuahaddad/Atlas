@@ -1,10 +1,10 @@
-# dreamkit
+# morpheus
 
 Shared memory for coding agents (Claude Code, OpenCode), kept as markdown in git and changed
 only through reviewed pull requests.
 
 Agents learn things in sessions: a preference, a correction, how two projects fit together.
-Each tool keeps that in its own scratch memory, per project, per machine. dreamkit gives a
+Each tool keeps that in its own scratch memory, per project, per machine. morpheus gives a
 team (or one person with many projects) an **org memory** every agent reads, and a batch job,
 **dream**, that proposes what it should learn from the agents' sessions. A human merges or
 rejects each proposal.
@@ -36,8 +36,10 @@ project, and topic pages read on demand. See [CONVENTIONS.md](CONVENTIONS.md) an
     valid frontmatter.
   - `scripts/open_pr.py` runs the tier's PR command.
 - `skills/remember/`: proposes one topic to a tier as a small PR, from inside a session.
-- `dreamkit.toml.example`: per-tier config: repo, sources, deny patterns, an optional prepare
-  command, model hint, PR command.
+- `morpheus.toml.example`: each user's config, one table per tier: the clone, sources, an
+  optional prepare command, the PR command.
+- `example/morpheus.toml`: a tier's own rules, kept in the tier repo: deny patterns, model
+  hint, INDEX line limit. Everyone who dreams the tier gets them.
 
 The scripts use only the Python standard library (3.11 or later) and run with `uv run`, or
 `python3` where uv isn't installed.
@@ -51,12 +53,15 @@ The scripts use only the Python standard library (3.11 or later) and run with `u
    - Claude Code: `ln -s /path/to/memory-org/INDEX.md ~/.claude/rules/org-memory.md`
    - OpenCode: add the path to `instructions` in `~/.config/opencode/opencode.json`, or link it
      as `~/.config/opencode/AGENTS.md` if you have no global AGENTS.md.
-4. Install the skills. In Claude Code: `/plugin install dreamkit --marketplace joshuahaddad/Atlas`.
+4. Install the skills. In Claude Code: `/plugin install morpheus --marketplace joshuahaddad/Atlas`.
    For OpenCode, Codex and others: `npx skills add joshuahaddad/Atlas -g`.
-5. For each user who runs dream: copy `dreamkit.toml.example` to
-   `~/.config/dreamkit/dreamkit.toml` and fill in each tier. Give `repo` its own clone (not
-   the checkout agents read), and give that clone a remote the PR command can push to: a fork,
-   or a review ref.
+5. Put the tier's rules in its repo: copy `example/morpheus.toml` to the tier repo's root and
+   merge it by PR. The filter reads it from `origin/<base>`, so a dream branch can't change it.
+6. For each user who runs dream, ask an agent to "set up morpheus for org". The dream skill's
+   **Set up a tier** clones the repo, proposes sources and a PR command, and writes
+   `~/.config/morpheus/morpheus.toml` (or `$MORPHEUS_CONFIG`). To write it by hand, start from
+   `morpheus.toml.example`. Give `repo` its own clone (not the checkout agents read), with a
+   remote the PR command can push to: a fork, or a review ref.
 
 ## Run dream by hand
 
@@ -65,7 +70,7 @@ the tier allows:
 
 > dream for org
 
-The skill filters the sessions into `~/.cache/dreamkit/<tier>-<date>/`, reads only that, commits
+The skill filters the sessions into `~/.cache/morpheus/<tier>-<date>/`, reads only that, commits
 its changes on a `dream/<tier>-<date>` branch in the tier clone, runs `check.py`, and opens the PR.
 
 To see what the model would get, run the filter alone:
@@ -100,7 +105,8 @@ that layout is not supported.
   plain regex match. Deny patterns are blunt: test them with a dry run of the filter, and prefer
   a stricter pattern to a leak. They match the messages, not the instruction files a tool
   records.
-- **Transcripts hold secrets** that passed through a session. The skill tells the model not to
+- **Transcripts hold secrets** that passed through a session. The filter drops any session that
+  holds a private key or a common API token's shape, on every tier. The skill tells the model not to
   copy any; a secret scanner on the tier repo catches what slips through. PR bodies are not
   scanned.
 - The model that runs a tier's dream reads everything the filter keeps. Pick it per tier.
