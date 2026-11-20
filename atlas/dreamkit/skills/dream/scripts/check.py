@@ -3,12 +3,15 @@
 # ///
 """Check a tier repo against CONVENTIONS.md. Prints each problem; exits 1 if any.
 
-    uv run check.py path/to/tier-repo [--max-lines 60]
+    uv run check.py path/to/tier-repo [--max-lines N]
+
+The limit defaults to the repo's dreamkit.toml `index_max_lines`, else 60.
 """
 
 import argparse
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 TYPES = {"user", "feedback", "project", "reference"}
@@ -74,9 +77,11 @@ def check(repo, max_lines=60):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("repo")
-    ap.add_argument("--max-lines", type=int, default=60)
+    ap.add_argument("--max-lines", type=int)
     a = ap.parse_args()
-    problems = check(a.repo, a.max_lines)
+    policy = Path(a.repo) / "dreamkit.toml"
+    limit = a.max_lines or (tomllib.loads(policy.read_text()) if policy.is_file() else {}).get("index_max_lines", 60)
+    problems = check(a.repo, limit)
     print("\n".join(problems) or "ok")
     sys.exit(1 if problems else 0)
 

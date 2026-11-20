@@ -18,7 +18,7 @@ from filter import DEFAULT_CONFIG, load_tier
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--config", default=os.environ.get("DREAMKIT_CONFIG", DEFAULT_CONFIG))
+    ap.add_argument("--config", default=DEFAULT_CONFIG)
     ap.add_argument("--tier", required=True)
     ap.add_argument("--title", required=True)
     ap.add_argument("--body", required=True, help="a markdown file with the PR description")

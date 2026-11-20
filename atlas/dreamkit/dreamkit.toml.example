@@ -1,16 +1,21 @@
-# dreamkit config. Copy to ~/.config/dreamkit/dreamkit.toml, or point DREAMKIT_CONFIG at it.
-# One table per tier. Each user who runs a dream keeps their own copy.
+# dreamkit's per-user config. Copy to ~/.config/dreamkit/dreamkit.toml (or under $XDG_CONFIG_HOME),
+# or point DREAMKIT_CONFIG at it. One table per tier: this machine's clone, sources and PR command.
+# Each user who runs a dream keeps their own copy; the dream skill's "Set up a tier" writes one.
+#
+# The tier's own rules (deny patterns, model hint, INDEX line limit) live in the tier repo's
+# dreamkit.toml, read from origin/<base>; see example/dreamkit.toml. Keys set here win over the
+# tier's, except deny, which adds to the tier's patterns. Secret-shaped text (private keys,
+# common API tokens) is always dropped.
 
 [tiers.org]
 # A clone of the tier repo that dream and remember commit branches in. Not the checkout agents read.
-repo = "~/dreamkit/memory-org"
-base = "main"                 # the branch PRs target
-model = "any model your org allows for org-wide data"   # a hint the skill shows; nothing enforces it
+repo = "~/.local/share/dreamkit/memory-org"
+# base = "main"               # the branch PRs target; defaults to origin's default branch
 max_age_days = 7              # transcripts older than this are skipped
-# Python regular expressions. A session or file that matches one anywhere is dropped before the model runs.
+# Python regular expressions, added to the tier's. A session or file that matches one anywhere is
+# dropped before the model runs. For patterns only this user should name.
 deny = [
-  "/srv/finance",
-  "(?i)\\bpayroll\\b",
+  "/home/me/finance",
 ]
 # Optional shell command run once before any source is read; if it fails, nothing is written.
 # Such as copying sessions another user owns into a folder this user can read (no pipe: sh has no pipefail):
@@ -41,9 +46,7 @@ path = "~/.local/share/opencode/opencode.db"
 
 # A second tier, read only by a smaller group, run by a user who can read its sources.
 [tiers.private]
-repo = "~/dreamkit/memory-private"
-model = "a local model only"
-deny = []
+repo = "~/.local/share/dreamkit/memory-private"
 pr_command = '''git push fork "HEAD:$DREAM_BRANCH" && gh pr create --repo example-org/memory-private --base "$DREAM_BASE" --head "example-bot:$DREAM_BRANCH" --title "$DREAM_TITLE" --body-file "$DREAM_BODY_FILE"'''
 
 [[tiers.private.sources]]

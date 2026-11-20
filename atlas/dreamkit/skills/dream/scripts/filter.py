@@ -8,6 +8,7 @@ patterns anywhere in its raw text is dropped whole, so the model never sees it.
 A tier's optional `prepare` command runs first, such as to copy another user's sessions.
 
     uv run filter.py --tier org --out ~/.cache/dreamkit/org-2026-01-31
+    uv run filter.py --tier org --show
 """
 
 import argparse
@@ -22,21 +23,45 @@ import time
 import tomllib
 from pathlib import Path
 
-DEFAULT_CONFIG = "~/.config/dreamkit/dreamkit.toml"
+DEFAULT_CONFIG = os.environ.get("DREAMKIT_CONFIG") or os.path.join(
+    os.environ.get("XDG_CONFIG_HOME") or "~/.config", "dreamkit", "dreamkit.toml")
+SETUP_HINT = "ask the agent to set up dreamkit (the dream skill's \"Set up a tier\")"
+# Secret shapes, dropped on every tier on top of its own deny patterns.
+BUILTIN_DENY = [
+    r"BEGIN [A-Z ]*PRIVATE KEY",
+    r"\b(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{36}|github_pat_\w{50,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16})",
+]
 # Sessions that ran dream itself hold other sessions' text; skip them so dream never feeds on its own output.
 DREAM_MARKER = "dreamkit:" + "dream-session"
 CLIP = 2000  # characters kept from each tool input or result
 
 
+def git(repo, *args):
+    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True)
+
+
 def load_tier(config, tier):
-    with open(os.path.expanduser(config), "rb") as f:
+    """The tier's table from the user's config, over the tier repo's own dreamkit.toml on origin/<base>.
+    The user's keys win, except deny, which adds to the tier's patterns."""
+    path = os.path.expanduser(config)
+    if not os.path.exists(path):
+        sys.exit(f"no dreamkit config at {config}; {SETUP_HINT}")
+    with open(path, "rb") as f:
         tiers = tomllib.load(f).get("tiers", {})
     if tier not in tiers:
-        sys.exit(f"no tier {tier!r} in {config}; tiers: {', '.join(tiers) or 'none'}")
-    t = tiers[tier]
-    t.setdefault("base", "main")
-    t["repo"] = os.path.expanduser(t["repo"])
-    return t
+        sys.exit(f"no tier {tier!r} in {config}; tiers: {', '.join(tiers) or 'none'}; {SETUP_HINT}")
+    user = tiers[tier]
+    repo = os.path.expanduser(user["repo"])
+    head = git(repo, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").stdout.strip()
+    base = user.get("base") or head.removeprefix("origin/") or "main"
+    ref = f"origin/{base}"
+    # Read from origin, not the checkout, so a dream branch can't loosen its own filter.
+    if git(repo, "rev-parse", "--verify", "--quiet", ref).returncode:
+        sys.exit(f"{repo} has no {ref}: clone the tier repo there and fetch")
+    policy = {}
+    if git(repo, "ls-tree", "--name-only", ref, "dreamkit.toml").stdout.strip():
+        policy = tomllib.loads(git(repo, "show", f"{ref}:dreamkit.toml").stdout)
+    return policy | user | {"repo": repo, "base": base, "deny": policy.get("deny", []) + user.get("deny", [])}
 
 
 def clip(s):
@@ -178,7 +203,7 @@ def run(tier, out):
             sys.exit(f"prepare exited {r.returncode}; nothing written")
     (out / "sessions").mkdir(parents=True, exist_ok=True)
     (out / "memory").mkdir(exist_ok=True)
-    deny = [re.compile(p) for p in tier.get("deny", [])] + [re.compile(re.escape(DREAM_MARKER))]
+    deny = [re.compile(p) for p in BUILTIN_DENY + tier.get("deny", [])] + [re.compile(re.escape(DREAM_MARKER))]
     since = time.time() - tier.get("max_age_days", 7) * 86400
     kept, dropped = [], {}
 
@@ -212,11 +237,17 @@ def run(tier, out):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--config", default=os.environ.get("DREAMKIT_CONFIG", DEFAULT_CONFIG))
+    ap.add_argument("--config", default=DEFAULT_CONFIG)
     ap.add_argument("--tier", required=True)
-    ap.add_argument("--out", required=True)
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--out")
+    g.add_argument("--show", action="store_true", help="print the tier's merged config as JSON and exit")
     a = ap.parse_args()
-    m = run(load_tier(a.config, a.tier), os.path.expanduser(a.out))
+    t = load_tier(a.config, a.tier)
+    if a.show:
+        print(json.dumps(t, indent=2))
+        return
+    m = run(t, os.path.expanduser(a.out))
     n_mem = len(os.listdir(Path(os.path.expanduser(a.out)) / "memory"))
     print(f"kept {len(m['kept'])} sessions and {n_mem} memory files; dropped {sum(m['dropped_by_pattern'].values())}")
 

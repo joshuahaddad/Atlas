@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -145,3 +146,61 @@ def test_opencode_v2(tmp_path):
     text = (tmp_path / "out/sessions/opencode-ses_ok.md").read_text()
     assert "use uv for python" in text and "will do" in text and "[tool bash]" in text and "a b" in text
     assert "hidden" not in text and "payroll" not in text
+
+
+def test_builtin_deny(tmp_path):
+    jsonl(tmp_path / "s-key.jsonl", "s-key", "token is ghp_" + "x" * 36)
+    jsonl(tmp_path / "s-ok.jsonl", "s-ok", "prefer small PRs")
+    m = f.run({"sources": [{"kind": "claude-jsonl", "glob": str(tmp_path / "*.jsonl")}]}, tmp_path / "out")
+    assert [s["id"] for s in m["kept"]] == ["claude-s-ok"]
+
+
+def sh(*cmd, cwd=None):
+    subprocess.run(cmd, cwd=cwd, check=True, capture_output=True)
+
+
+def tier_clone(tmp_path, policy):
+    """A tier repo on a local origin whose default branch is `trunk`, and a clone of it."""
+    origin, clone = tmp_path / "origin", tmp_path / "clone"
+    sh("git", "init", "-q", "-b", "trunk", str(origin))
+    (origin / "INDEX.md").write_text("# Index\n")
+    if policy:
+        (origin / "dreamkit.toml").write_text(policy)
+    sh("git", "add", "-A", cwd=origin)
+    sh("git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init", cwd=origin)
+    sh("git", "clone", "-q", str(origin), str(clone))
+    return clone
+
+
+def config(tmp_path, table):
+    p = tmp_path / "dreamkit.toml"
+    p.write_text(table)
+    return str(p)
+
+
+def test_load_tier_merges_policy(tmp_path):
+    clone = tier_clone(tmp_path, 'model = "local only"\nindex_max_lines = 40\ndeny = ["tier-secret"]\n')
+    # A change on the checkout, such as on a dream branch, does not reach the filter.
+    (clone / "dreamkit.toml").write_text("deny = []\n")
+    t = f.load_tier(config(tmp_path, f'[tiers.org]\nrepo = "{clone}"\nmodel = "mine"\ndeny = ["user-secret"]\n'), "org")
+    assert t["base"] == "trunk" and t["repo"] == str(clone)
+    assert t["model"] == "mine" and t["index_max_lines"] == 40
+    assert t["deny"] == ["tier-secret", "user-secret"]
+
+
+def test_load_tier_without_policy(tmp_path):
+    clone = tier_clone(tmp_path, None)
+    t = f.load_tier(config(tmp_path, f'[tiers.org]\nrepo = "{clone}"\nbase = "trunk"\n'), "org")
+    assert t["deny"] == [] and "model" not in t
+
+
+def test_load_tier_errors(tmp_path):
+    for cfg, tier, want in [(str(tmp_path / "none.toml"), "org", "no dreamkit config"),
+                            (config(tmp_path, '[tiers.org]\nrepo = "/x"\n'), "private", "Set up a tier"),
+                            (config(tmp_path, f'[tiers.org]\nrepo = "{tmp_path}"\n'), "org", "has no origin/main")]:
+        try:
+            f.load_tier(cfg, tier)
+        except SystemExit as e:
+            assert want in str(e), e
+        else:
+            raise AssertionError(f"{want}: should exit")
