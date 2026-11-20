@@ -5,7 +5,7 @@
 
     uv run check.py path/to/tier-repo [--max-lines N]
 
-The limit defaults to the repo's dreamkit.toml `index_max_lines`, else 60.
+The limit defaults to the repo's morpheus.toml `index_max_lines`, else 60.
 """
 
 import argparse
@@ -79,7 +79,7 @@ def main():
     ap.add_argument("repo")
     ap.add_argument("--max-lines", type=int)
     a = ap.parse_args()
-    policy = Path(a.repo) / "dreamkit.toml"
+    policy = Path(a.repo) / "morpheus.toml"
     limit = a.max_lines or (tomllib.loads(policy.read_text()) if policy.is_file() else {}).get("index_max_lines", 60)
     problems = check(a.repo, limit)
     print("\n".join(problems) or "ok")

@@ -3,7 +3,7 @@
 # ///
 """Run a tier's pr_command from its repo clone, on the branch that is checked out.
 
-    uv run open_pr.py --tier org --title "Dream 2026-01-31" --body ~/.cache/dreamkit/org-2026-01-31/pr.md
+    uv run open_pr.py --tier org --title "Dream 2026-01-31" --body ~/.cache/morpheus/org-2026-01-31/pr.md
 
 pr_command gets DREAM_TIER, DREAM_BRANCH, DREAM_BASE, DREAM_TITLE and DREAM_BODY_FILE.
 """

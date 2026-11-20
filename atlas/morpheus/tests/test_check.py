@@ -33,7 +33,7 @@ def test_problems(tmp_path):
 def test_max_lines_from_policy(tmp_path):
     repo = tmp_path / "tier"
     shutil.copytree(EXAMPLE, repo)
-    (repo / "dreamkit.toml").write_text("index_max_lines = 3\n")
+    (repo / "morpheus.toml").write_text("index_max_lines = 3\n")
     r = subprocess.run([sys.executable, str(Path(__file__).parents[1] / "skills/dream/scripts/check.py"), str(repo)],
                        capture_output=True, text=True)
     assert r.returncode == 1 and "the limit is 3" in r.stdout

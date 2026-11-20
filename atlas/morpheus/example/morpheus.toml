@@ -1,4 +1,4 @@
-# The tier's own dreamkit rules, read by the filter from origin/<base>. Change it by PR, like a page.
+# The tier's own morpheus rules, read by the filter from origin/<base>. Change it by PR, like a page.
 # Every user who dreams this tier gets these; their own config can add deny patterns, not remove them.
 
 model = "any model your org allows for org-wide data"   # a hint the skill shows; nothing enforces it

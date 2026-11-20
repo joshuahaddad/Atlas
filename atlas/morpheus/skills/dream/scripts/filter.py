@@ -7,7 +7,7 @@ Runs before the model. A session or file that matches any of the tier's deny
 patterns anywhere in its raw text is dropped whole, so the model never sees it.
 A tier's optional `prepare` command runs first, such as to copy another user's sessions.
 
-    uv run filter.py --tier org --out ~/.cache/dreamkit/org-2026-01-31
+    uv run filter.py --tier org --out ~/.cache/morpheus/org-2026-01-31
     uv run filter.py --tier org --show
 """
 
@@ -23,16 +23,18 @@ import time
 import tomllib
 from pathlib import Path
 
-DEFAULT_CONFIG = os.environ.get("DREAMKIT_CONFIG") or os.path.join(
-    os.environ.get("XDG_CONFIG_HOME") or "~/.config", "dreamkit", "dreamkit.toml")
-SETUP_HINT = "ask the agent to set up dreamkit (the dream skill's \"Set up a tier\")"
+DEFAULT_CONFIG = os.environ.get("MORPHEUS_CONFIG") or os.path.join(
+    os.environ.get("XDG_CONFIG_HOME") or "~/.config", "morpheus", "morpheus.toml")
+SETUP_HINT = "ask the agent to set up morpheus (the dream skill's \"Set up a tier\")"
 # Secret shapes, dropped on every tier on top of its own deny patterns.
 BUILTIN_DENY = [
     r"BEGIN [A-Z ]*PRIVATE KEY",
     r"\b(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{36}|github_pat_\w{50,}|xox[abpr]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16})",
 ]
 # Sessions that ran dream itself hold other sessions' text; skip them so dream never feeds on its own output.
-DREAM_MARKER = "dreamkit:" + "dream-session"
+DREAM_MARKERS = ["morpheus:" + "dream-session",
+                 # shortcut: dreams from before the rename to morpheus; drop once they pass max_age_days (after 2026-12)
+                 "dreamkit:" + "dream-session"]
 CLIP = 2000  # characters kept from each tool input or result
 
 
@@ -41,11 +43,11 @@ def git(repo, *args):
 
 
 def load_tier(config, tier):
-    """The tier's table from the user's config, over the tier repo's own dreamkit.toml on origin/<base>.
+    """The tier's table from the user's config, over the tier repo's own morpheus.toml on origin/<base>.
     The user's keys win, except deny, which adds to the tier's patterns."""
     path = os.path.expanduser(config)
     if not os.path.exists(path):
-        sys.exit(f"no dreamkit config at {config}; {SETUP_HINT}")
+        sys.exit(f"no morpheus config at {config}; {SETUP_HINT}")
     with open(path, "rb") as f:
         tiers = tomllib.load(f).get("tiers", {})
     if tier not in tiers:
@@ -59,8 +61,8 @@ def load_tier(config, tier):
     if git(repo, "rev-parse", "--verify", "--quiet", ref).returncode:
         sys.exit(f"{repo} has no {ref}: clone the tier repo there and fetch")
     policy = {}
-    if git(repo, "ls-tree", "--name-only", ref, "dreamkit.toml").stdout.strip():
-        policy = tomllib.loads(git(repo, "show", f"{ref}:dreamkit.toml").stdout)
+    if git(repo, "ls-tree", "--name-only", ref, "morpheus.toml").stdout.strip():
+        policy = tomllib.loads(git(repo, "show", f"{ref}:morpheus.toml").stdout)
     return policy | user | {"repo": repo, "base": base, "deny": policy.get("deny", []) + user.get("deny", [])}
 
 
@@ -203,7 +205,7 @@ def run(tier, out):
             sys.exit(f"prepare exited {r.returncode}; nothing written")
     (out / "sessions").mkdir(parents=True, exist_ok=True)
     (out / "memory").mkdir(exist_ok=True)
-    deny = [re.compile(p) for p in BUILTIN_DENY + tier.get("deny", [])] + [re.compile(re.escape(DREAM_MARKER))]
+    deny = [re.compile(p) for p in BUILTIN_DENY + tier.get("deny", [])] + [re.compile(re.escape(m)) for m in DREAM_MARKERS]
     since = time.time() - tier.get("max_age_days", 7) * 86400
     kept, dropped = [], {}
 

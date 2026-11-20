@@ -21,7 +21,7 @@ Run them with `uv run`, or `python3` (3.11+) where uv isn't installed.
    git -C "$REPO" fetch origin
    git -C "$REPO" switch -c "remember/<short-slug>" "origin/$BASE"
    ```
-3. **Write one topic.** Never edit the repo's `dreamkit.toml`. Read `INDEX.md` first. If a page already covers the topic, edit it.
+3. **Write one topic.** Never edit the repo's `morpheus.toml`. Read `INDEX.md` first. If a page already covers the topic, edit it.
    Otherwise add one page in the folder the kit's `CONVENTIONS.md` names
    (`$(realpath "$DREAM")/../../CONVENTIONS.md`), with frontmatter `name`,
    `description`, `type`, and add the one line that links it from `INDEX.md` or a project page.

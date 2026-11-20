@@ -14,11 +14,11 @@ gate, so every change must carry evidence they can check.
 
 ## 0. Set up
 
-1. Run `echo dreamkit:dream-session`. The filter skips any session that holds this marker, so a
+1. Run `echo morpheus:dream-session`. The filter skips any session that holds this marker, so a
    later dream never reads this one (it holds other sessions' text).
 2. Ask which tier, unless the user named it. Read it with
    `uv run "$SKILL/scripts/filter.py" --tier "$TIER" --show`, which merges the user's config
-   with the tier repo's own `dreamkit.toml`, and take `$REPO` and `$BASE` from it. If it says
+   with the tier repo's own `morpheus.toml`, and take `$REPO` and `$BASE` from it. If it says
    there is no config or no such tier, follow **Set up a tier** below first. Tell the user the
    tier's `model` hint; if the model you run on doesn't fit it, stop.
 3. Make the tier clone clean and current, then branch:
@@ -31,7 +31,7 @@ gate, so every change must carry evidence they can check.
 ## 1. Filter (before you read anything)
 
 ```bash
-WORK="${XDG_CACHE_HOME:-$HOME/.cache}/dreamkit/$TIER-$(date +%F)"
+WORK="${XDG_CACHE_HOME:-$HOME/.cache}/morpheus/$TIER-$(date +%F)"
 uv run "$SKILL/scripts/filter.py" --tier "$TIER" --out "$WORK"
 ```
 
@@ -132,19 +132,19 @@ Run this when `--show` finds no config or no table for the tier, then go back to
 1. Ask for the tier's name and its repo URL. If a file in `~/.claude/rules/` links to a tier
    repo's `INDEX.md`, offer that checkout's `git remote get-url origin` as the URL, but don't
    clone into that checkout: agents read it, and dream needs its own clone.
-2. Clone it: `git clone <url> ~/.local/share/dreamkit/<tier>`.
+2. Clone it: `git clone <url> ~/.local/share/morpheus/<tier>`.
 3. Propose sources from what exists on this machine: `~/.claude/projects` (a `claude-jsonl`
-   and a `files` source, as in `dreamkit.toml.example`) and
+   and a `files` source, as in `morpheus.toml.example`) and
    `~/.local/share/opencode/opencode.db` (`opencode-sqlite`). The user confirms the list.
 4. Ask how PRs reach the forge, and write `pr_command` from the matching example in
-   `$(realpath "$SKILL")/../../dreamkit.toml.example`.
-5. Append the tier's table to the config (`$DREAMKIT_CONFIG`, else
-   `${XDG_CONFIG_HOME:-~/.config}/dreamkit/dreamkit.toml`). Never change an existing table,
+   `$(realpath "$SKILL")/../../morpheus.toml.example`.
+5. Append the tier's table to the config (`$MORPHEUS_CONFIG`, else
+   `${XDG_CONFIG_HOME:-~/.config}/morpheus/morpheus.toml`). Never change an existing table,
    or a file that starts with `# Ansible managed`; tell the user what to add instead.
 6. Show the user what dream would read:
-   `uv run "$SKILL/scripts/filter.py" --tier <tier> --out "${XDG_CACHE_HOME:-$HOME/.cache}/dreamkit/<tier>-preview"`.
+   `uv run "$SKILL/scripts/filter.py" --tier <tier> --out "${XDG_CACHE_HOME:-$HOME/.cache}/morpheus/<tier>-preview"`.
 
-The tier's deny patterns and model hint live in the tier repo's `dreamkit.toml`, not here. If
+The tier's deny patterns and model hint live in the tier repo's `morpheus.toml`, not here. If
 the repo has none, say so: the user adds them by PR to the tier repo.
 
 ## Never
@@ -152,4 +152,4 @@ the repo has none, say so: the user adds them by PR to the tier repo.
 - Write anywhere but `$WORK` and the dream branch in the tier clone.
 - Push to `base`, merge, or approve.
 - Read sources outside `$WORK`.
-- Edit the tier repo's `dreamkit.toml`. It sets the filter, and only a human changes it.
+- Edit the tier repo's `morpheus.toml`. It sets the filter, and only a human changes it.

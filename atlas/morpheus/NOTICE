@@ -1,7 +1,7 @@
-dreamkit
+morpheus
 Copyright (c) 2026 Joshua Haddad
 
-dreamkit's design draws on public sources:
+morpheus's design draws on public sources:
 
 - Claude Code's memory documentation (https://code.claude.com/docs/en/memory):
   an index file loaded into every session with topic files read on demand,
@@ -18,5 +18,5 @@ dreamkit's design draws on public sources:
   layered permissions, and a human accepting or rejecting each proposed change.
 
 An early draft was compared against timoncool/dream-skill
-(https://github.com/timoncool/dream-skill). dreamkit includes no code or text
+(https://github.com/timoncool/dream-skill). morpheus includes no code or text
 from it.
